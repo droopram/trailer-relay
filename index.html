@@ -1,0 +1,35 @@
+<!doctype html>
+<!--
+  Nova trailer relay. YouTube refuses embeds from apps that run from local files (Error 153: no
+  origin/referrer). The TV app embeds this page instead; this page embeds YouTube from a real web
+  origin and relays the player's postMessage traffic in both directions.
+  Usage: https://<host>/?v=<youtubeId>&start=4&mute=0
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <title>Nova trailer relay</title>
+  <style>html, body { margin: 0; height: 100%; background: #000; overflow: hidden; } iframe { border: 0; width: 100%; height: 100%; }</style>
+</head>
+<body>
+  <iframe id="yt" allow="autoplay; encrypted-media" title="Trailer"></iframe>
+  <script>
+    (function () {
+      var q = new URLSearchParams(location.search);
+      var v = q.get('v') || '';
+      if (!/^[A-Za-z0-9_-]{6,20}$/.test(v)) return;
+      var start = parseInt(q.get('start'), 10) || 0;
+      var mute = q.get('mute') === '1' ? 1 : 0;
+      var yt = document.getElementById('yt');
+      yt.src = 'https://www.youtube.com/embed/' + v + '?autoplay=1&controls=0&disablekb=1&fs=0&iv_load_policy=3' +
+        '&modestbranding=1&playsinline=1&rel=0&enablejsapi=1&start=' + start + '&mute=' + mute +
+        '&origin=' + encodeURIComponent(location.origin);
+      window.addEventListener('message', function (e) {
+        if (e.source === yt.contentWindow) parent.postMessage(e.data, '*');            // player -> app
+        else if (e.source === parent) yt.contentWindow.postMessage(e.data, 'https://www.youtube.com'); // app -> player
+      });
+    })();
+  </script>
+</body>
+</html>
